@@ -12,6 +12,41 @@ import github_client as gh
 
 log = logging.getLogger(__name__)
 
+_VALID_CLASSIFICATIONS = {"bug", "feature", "question", "duplicate", "spam", "unclear"}
+_VALID_ACTIONS = {
+    "label_and_acknowledge", "reply_and_close",
+    "close_duplicate", "close_spam", "ask_clarification",
+}
+_VALID_LABELS_KEYS = {"bug", "feature", "question", "duplicate", "spam", "stale", "handled"}
+
+
+def _validate_triage_result(result: dict, config: dict) -> dict:
+    """
+    Reject or sanitize any triage result that doesn't match the allowed schema.
+    If validation fails, fall back to closing as spam — safe default.
+    """
+    allowed_label_names = set(config["labels"].values())
+
+    if result.get("classification") not in _VALID_CLASSIFICATIONS:
+        log.warning("Invalid classification '%s' — falling back to spam", result.get("classification"))
+        return {"classification": "spam", "action": "close_spam", "comment": "", "labels": [], "reasoning": "validation failure"}
+
+    if result.get("action") not in _VALID_ACTIONS:
+        log.warning("Invalid action '%s' — falling back to spam", result.get("action"))
+        return {"classification": "spam", "action": "close_spam", "comment": "", "labels": [], "reasoning": "validation failure"}
+
+    # Strip any labels Claude invented that aren't in our allowed set
+    raw_labels = result.get("labels") or []
+    if not isinstance(raw_labels, list):
+        raw_labels = []
+    result["labels"] = [l for l in raw_labels if l in allowed_label_names]
+
+    # Truncate comment to prevent runaway output
+    comment = result.get("comment") or ""
+    result["comment"] = comment[:1000]
+
+    return result
+
 
 def _ensure_labels(config: dict) -> None:
     labels = config["labels"]
@@ -39,7 +74,7 @@ def handle_issue(event: dict, config: dict) -> None:
 
     log.info("Triaging issue #%d: %s", number, issue["title"])
 
-    result = claude_client.triage_issue(issue, config)
+    result = _validate_triage_result(claude_client.triage_issue(issue, config), config)
     log.info("Classification: %s — action: %s", result["classification"], result["action"])
 
     action = result["action"]
