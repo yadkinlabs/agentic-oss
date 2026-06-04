@@ -1,0 +1,40 @@
+name: Agentic OSS
+description: AI-powered issue and PR triage for open source repos. Automates noise, surfaces signal.
+author: Yadkin Labs
+
+branding:
+  icon: cpu
+  color: blue
+
+inputs:
+  anthropic-api-key:
+    description: Anthropic API key (store as a GitHub secret)
+    required: true
+  config-path:
+    description: Path to agentic-oss.yml in the consuming repo
+    required: false
+    default: .github/agentic-oss.yml
+  mode:
+    description: "triage | stale | digest"
+    required: false
+    default: triage
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install dependencies
+      shell: bash
+      run: pip install -q anthropic requests pyyaml
+
+    - name: Run
+      shell: bash
+      run: python ${{ github.action_path }}/src/main.py
+      env:
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+        CONFIG_PATH: ${{ inputs.config-path }}
+        ACTION_MODE: ${{ inputs.mode }}
+        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}

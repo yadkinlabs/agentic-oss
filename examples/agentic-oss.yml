@@ -1,0 +1,43 @@
+# agentic-oss configuration
+# Place this file at .github/agentic-oss.yml in your repo
+
+project:
+  name: your-project-name
+  description: One sentence describing what your project does.
+  docs_url: https://github.com/your-org/your-repo#readme
+
+# Label names to use (defaults shown — override if your repo uses different names)
+labels:
+  bug:       bug
+  feature:   enhancement
+  question:  question
+  duplicate: duplicate
+  spam:      spam
+  stale:     stale
+  handled:   agentic-handled
+
+# Stale issue settings
+stale:
+  days_before_stale: 30   # warn after this many days of inactivity
+  days_before_close: 15   # close this many days after the warning
+  exempt_labels:
+    - pinned
+    - security
+    - in-progress
+
+# FAQ — Claude will use these to answer common questions and close the issue
+faq:
+  - question: How do I install this?
+    answer: See the Quick Start section in the README.
+  - question: What are the requirements?
+    answer: List your requirements here.
+
+# Paths that should be flagged for extra attention in PRs
+sensitive_paths:
+  - src/auth
+  - src/config
+  - .env
+
+# Daily digest settings
+digest:
+  mention: "@your-github-username"  # who to tag in the daily digest issue
